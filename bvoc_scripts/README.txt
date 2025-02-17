@@ -1,6 +1,6 @@
 Input files are PFT.nc and copy_MEGAN2020.nc
 The PFT file is regridded from mksrf_landuse_rc2000_c110913.nc, which is here:
-/Users/sumilthakrar/UMN/Projects/landd/AQ-land/bVOCs/PFTmap/
+~/Projects/landd/AQ-land/bVOCs/PFTmap/
 This is the map of the plant functional types, and the MEGAN file is the emissions saved out
 
 The Python scripts isoprene-factor.py, mtpa-factor.py and mtpo-factor.py divide
