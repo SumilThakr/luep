@@ -3,7 +3,8 @@ from dust_scripts import dust_1_soil_texture
 from dust_scripts import dust_2_flux_calc
 from dust_scripts import dust_3_sum
 
-inputdir = "/Users/sumilthakrar/UMN/Projects/landd2/pkg"
+# inputdir = "/Users/sumilthakrar/UMN/Projects/landd2/pkg" # sumil local
+inputdir = "G:/Shared drives/NatCapTEEMs/Files/base_data/submissions/air_quality" # teems drive
 
 def main():
     print("Finding soil texture")

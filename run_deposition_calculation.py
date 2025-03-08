@@ -4,7 +4,8 @@ from dep_scripts import dep_2_lai_month_avg
 from dep_scripts import dep_3_velocity
 from dep_scripts import dep_4_multiply
 
-inputdir = "/Users/sumilthakrar/UMN/Projects/landd2/pkg"
+# inputdir = "/Users/sumilthakrar/UMN/Projects/landd2/pkg" # sumil local
+inputdir = "G:/Shared drives/NatCapTEEMs/Files/base_data/submissions/air_quality" # teems drive
 
 def main():
     print("Reclassifying leaf area index")
