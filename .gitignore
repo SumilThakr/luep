@@ -1,0 +1,136 @@
+# Land Use Emissions Processor - Git Ignore File
+# =================================================
+
+# Large Data Directories - Never commit input/output data
+inputs/
+outputs/
+intermediate/
+cache/
+backups/
+
+# Scenario Data (large raster files) - Keep structure but not data
+scenarios/*/*/*.tif
+scenarios/*/*/*.nc
+scenarios/*/*/*.h5
+scenarios/*/*/*/*.tif
+scenarios/*/*/*/*.nc
+
+# But keep CSV metadata and YAML config files in scenarios/
+!scenarios/*/*.csv
+!scenarios/*/*.yml
+!scenarios/*/*.yaml
+!scenarios/*/*.txt
+!scenarios/*/*.md
+
+# Python Cache and Compiled Files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebooks (if any)
+.ipynb_checkpoints/
+*.ipynb
+
+# System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log Files and Temporary Files
+*.log
+*.tmp
+*.temp
+scenario_processing.log
+all_main_scripts.txt
+
+# Python Cache Files (more specific patterns)
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.spyderproject
+.spyproject
+
+# Environment and Configuration Files
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# R Files (if any)
+.RData
+.Rhistory
+.Rapp.history
+
+# Geospatial Temporary Files
+*.aux.xml
+*.tfw
+*.prj.aux.xml
+*.shp.xml
+
+# Large Raster/Geospatial Files (by extension)
+*.tif
+*.tiff
+*.nc
+*.nc4
+*.hdf
+*.hdf5
+*.h5
+
+# But keep small reference/template files if they exist
+!grid.tif
+!**/template*.tif
+!**/reference*.tif
+
+# Documentation Build Files
+docs/_build/
+site/
+
+# OS Generated Files
+.fuse_hidden*
+.nfs*
+
+# Conda/Pip
+.conda/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Coverage Reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Exploratory/Temporary Scripts (uncomment if needed)
+# exploratory_scripts/
+# scratch/
+# temp/
+
+# Keep README and documentation files
+!README.md
+!CLAUDE.md
+!*/README.md
+!*/README.txt
+!*/*.md

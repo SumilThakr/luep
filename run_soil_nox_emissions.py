@@ -6,7 +6,8 @@ from soil_nox_scripts import soil_nox_4_gblulc
 from soil_nox_scripts import soil_nox_5_align
 
 # inputdir = "/Users/sumilthakrar/UMN/Projects/landd2/pkg" # sumil local
-inputdir = "G:/Shared drives/NatCapTEEMs/Files/base_data/submissions/air_quality" # teems drive
+# inputdir = "G:/Shared drives/NatCapTEEMs/Files/base_data/submissions/air_quality" # teems drive
+inputdir = "inputs" # local inputs folder
 
 def main():
     print("Calculating time-dependent parameters for soil NOx emissions estimation")

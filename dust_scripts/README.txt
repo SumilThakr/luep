@@ -139,6 +139,31 @@ import math
 
 # 0.78 = PM2.5:PM10 ratio.
 
+############################################################
+############# Water Masking Post-Processing ###############
+############################################################
+
+# IMPORTANT: If dust emissions are non-zero over water areas, this indicates
+# a bug in the land use mapping within the flux calculation scripts.
+# 
+# A bug was identified and fixed in dust_landuse_flux_calc.py where water areas
+# (land use value 0) were not explicitly handled and fell through to the 
+# catch-all case, receiving dust-producing parameters instead of fdtf=0.0.
+#
+# For dust emission outputs generated before this fix, use the post-processing
+# script to correct them:
+#
+#   python dust_scripts/dust_water_mask.py <dust_emission_file> [output_file]
+#
+# This script:
+# 1. Identifies water areas (land use value 0) in the land use raster
+# 2. Sets dust emissions to 0.0 in all water pixels  
+# 3. Creates corrected output files
+#
+# Example usage:
+#   python dust_scripts/dust_water_mask.py outputs/dust_emissions.tiff
+#   python dust_scripts/dust_water_mask.py outputs/dust_emissions.tiff outputs/dust_corrected.tiff
+
 # Here are the coefficients used (Table 3)
 #Variables	Effect	Standard Error	t Value	Pr > |t|
 #Constant	-1.8327	0.1148	-15.97	<.0001

@@ -13,20 +13,22 @@ def run(inputdir):
 
     wdir                = "./"
 
-    # just for the pixel size
+    # Get reference grid info for dynamic sizing
     soc_raster_out       = os.path.join(wdir,'grid.tif')
+    grid_info = geop.get_raster_info(soc_raster_out)
+    grid_height, grid_width = grid_info['raster_size'][1], grid_info['raster_size'][0]
 
     # Define the start and end dates in YYYYMMDD format
     start_date = datetime(2020, 12, 31)
     end_date = datetime(2021, 12, 31)  # Adjust this date to your desired end date
 
-    # Create a list to store consecutive dry days for each grid cell
-    dry_days = np.zeros((720, 1440), dtype=int)  # Assuming a 0.5x0.5 degree grid
+    # Create a list to store consecutive dry days for each grid cell (dynamic sizing)
+    dry_days = np.zeros((grid_height, grid_width), dtype=int)  # Dynamic grid size
 
-    current_dry_days = np.zeros((720, 1440), dtype=int)
+    current_dry_days = np.zeros((grid_height, grid_width), dtype=int)
 
-    pulse = np.zeros((720, 1440), dtype=int)
-    tot_pulse = np.zeros((720, 1440), dtype=int)
+    pulse = np.zeros((grid_height, grid_width), dtype=int)
+    tot_pulse = np.zeros((grid_height, grid_width), dtype=int)
 
     for date in [start_date + timedelta(days=x) for x in range((end_date - start_date).days + 1)]:
         print(date)

@@ -17,6 +17,7 @@ def run(inputdir):
 
     # Initialize variables
     sum_of_tiffs = None
+    reference_transform = None
 
     # Loop through TIFF files within the specified date range
     for file_path in glob.glob(os.path.join(input_folder, 'flux_masked_*.tif')):
@@ -27,12 +28,17 @@ def run(inputdir):
                 if sum_of_tiffs is None:
                     # Initialize the sum with the first TIFF file
                     sum_of_tiffs = src.read(1)
+                    reference_transform = src.transform
                 else:
                     # Add the data from the current TIFF file to the sum
                     sum_of_tiffs += src.read(1)
 
-    # The flux units are g / cm2-s. So multiply by the cell area in cm2 (0.05 degrees) and seconds per day, and divide by 1000 to get kg
-    sum_of_tiffs = sum_of_tiffs * 0.05*0.05*11100000.0*11100000.0*86400/1000
+    # Calculate actual pixel area instead of hardcoded 0.05 degrees
+    pixel_width_deg = abs(reference_transform[0])  # degrees longitude
+    pixel_height_deg = abs(reference_transform[4])  # degrees latitude
+    
+    # The flux units are g / cm2-s. So multiply by the cell area in cm2 and seconds per day, and divide by 1000 to get kg
+    sum_of_tiffs = sum_of_tiffs * pixel_width_deg*pixel_height_deg*11100000.0*11100000.0*86400/1000
 
     # Create a TIFF file for the sum
     if sum_of_tiffs is not None:
