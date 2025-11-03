@@ -4,14 +4,61 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## CRITICAL: Python Environment Setup
 
-**ALWAYS use the rasters conda environment when running Python scripts in this project:**
+**ALWAYS use the luep-analysis conda environment when running Python scripts in this project:**
 
 ```bash
-# Use rasters conda environment
-/Users/sumilthakrar/yes/envs/rasters/bin/python
+# CRITICAL: Always source bashrc and use luep-analysis environment
+source ~/.bashrc && /Users/sumilthakrar/yes/envs/luep-analysis/bin/python
 ```
 
-This environment contains all required dependencies including rasterio, xarray, pygeoprocessing, geopandas, etc.
+**PROJ/GDAL Environment Fix:**
+When encountering PROJ database errors (conflicting PROJ installations), use this command:
+
+```bash
+# Fix PROJ database conflicts by setting environment variables
+source ~/.bashrc && PROJ_LIB=/Users/sumilthakrar/yes/envs/luep-analysis/share/proj GDAL_DATA=/Users/sumilthakrar/yes/envs/luep-analysis/share/gdal PROJ_NETWORK=OFF /Users/sumilthakrar/yes/envs/luep-analysis/bin/python
+```
+
+This resolves "PROJ: proj_create_from_database lacks DATABASE.LAYOUT.VERSION" errors by forcing the conda environment to use its own PROJ/GDAL installations instead of conflicting system installations.
+
+**Environment Notes:**
+- The `luep-analysis` environment contains all required dependencies including rasterio, xarray, pygeoprocessing, geopandas, etc.
+- The `rasters` environment exists but is missing critical packages like rasterio
+- **ALWAYS** source ~/.bashrc before running Python scripts to ensure proper conda initialization
+- Use the PROJ/GDAL environment fix when geospatial operations fail with projection errors
+
+**Examples:**
+```bash
+# Run main processing scripts
+source ~/.bashrc && /Users/sumilthakrar/yes/envs/luep-analysis/bin/python run_dust_emissions.py
+source ~/.bashrc && /Users/sumilthakrar/yes/envs/luep-analysis/bin/python run_soil_nox_emissions.py
+source ~/.bashrc && /Users/sumilthakrar/yes/envs/luep-analysis/bin/python run_deposition_calculation.py
+
+# Setup and restore commands
+source ~/.bashrc && /Users/sumilthakrar/yes/envs/luep-analysis/bin/python setup_uk_scenario.py
+source ~/.bashrc && /Users/sumilthakrar/yes/envs/luep-analysis/bin/python restore_global_setup.py
+```
+
+## CRITICAL: File Management Rules
+
+**NEVER write new scripts or temporary files directly to the project root directory.**
+- Always create new scripts in the `utils/` subdirectory to keep the project organized
+- Use descriptive names that indicate the script's purpose
+- Create the `utils/` directory if it doesn't exist
+- Exception: Only modify existing files in the root when explicitly requested by the user
+
+**Examples:**
+```bash
+# Good: Create utility scripts in subdirectory
+utils/reproject_global_landuse.py
+utils/create_global_grid.py
+utils/analyze_projection_conflicts.py
+
+# Bad: Creating files in project root
+reproject_global_landuse.py
+create_global_grid.py
+analyze_projection_conflicts.py
+```
 
 ## CRITICAL: Process Execution and File Validation Rules
 

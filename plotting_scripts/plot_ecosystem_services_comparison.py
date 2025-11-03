@@ -6,12 +6,13 @@ This script creates difference maps comparing UK land use scenarios against
 the "sustainable current" baseline for various ecosystem services.
 
 Usage:
-    python plot_ecosystem_services_comparison.py <scenario_name> [ecosystem_service]
+    python plot_ecosystem_services_comparison.py <scenario_name> [ecosystem_service] [--show-textbox]
 
 Example:
     python plot_ecosystem_services_comparison.py grazing_expansion
     python plot_ecosystem_services_comparison.py forestry_expansion biodiversity
     python plot_ecosystem_services_comparison.py grazing_expansion all
+    python plot_ecosystem_services_comparison.py forestry_expansion carbon --show-textbox
 
 Supported ecosystem services:
     - biodiversity (biodiversity index)
@@ -65,11 +66,13 @@ def load_ecosystem_service_data(scenario_name, service_name):
     with rasterio.open(file_path) as src:
         data = src.read(1)
         
-        # Get coordinate arrays
+        # Get coordinate arrays properly
         height, width = data.shape
-        cols, rows = np.meshgrid(np.arange(width), np.arange(height))
-        lons, lats = rasterio.transform.xy(src.transform, rows, cols)
-        lons, lats = np.array(lons), np.array(lats)
+        # Create coordinate arrays properly
+        transform = src.transform
+        x_coords = np.array([transform[2] + transform[0] * (j + 0.5) for j in range(width)])
+        y_coords = np.array([transform[5] + transform[4] * (i + 0.5) for i in range(height)])
+        lons, lats = np.meshgrid(x_coords, y_coords)
         
         # Get units from metadata or set defaults
         units = _get_units_for_service(service_name)
@@ -164,19 +167,20 @@ def _get_service_info(service_name):
         'positive_is_good': None
     })
 
-def create_ecosystem_service_difference_map(scenario_data, baseline_data, lons, lats, 
-                                          scenario_name, service_name, units, output_path):
+def create_ecosystem_service_difference_map(scenario_data, baseline_data, lons, lats,
+                                          scenario_name, service_name, units, output_path, show_textbox=False):
     """
     Create a difference map comparing scenario to baseline for ecosystem services
-    
+
     Args:
         scenario_data: Scenario service data
-        baseline_data: Baseline service data  
+        baseline_data: Baseline service data
         lons, lats: Coordinate arrays
         scenario_name: Name of scenario
         service_name: Name of ecosystem service
         units: Data units
         output_path: Output PNG path
+        show_textbox: Whether to show statistics text box (default: False)
     """
     
     # Calculate difference
@@ -254,25 +258,26 @@ def create_ecosystem_service_difference_map(scenario_data, baseline_data, lons, 
     title = f'{scenario_name.replace("_", " ").title()} vs Sustainable Current\n{service_info["title"]}'
     plt.title(title, fontsize=14, fontweight='bold', pad=20)
     
-    # Add summary statistics as text
-    mean_diff = np.nanmean(difference)
-    total_diff = np.nansum(difference) if service_name not in ['nitrate_cancer_cases', 'noxn_in_drinking_water'] else np.nanmean(difference)
-    
-    # Create interpretation text based on service type
-    if service_info['positive_is_good'] is True:
-        interpretation = "Green = improvement, Red = degradation"
-    elif service_info['positive_is_good'] is False:
-        interpretation = "Green = reduction (good), Red = increase (bad)"
-    else:
-        interpretation = "Red = increase, Green = decrease"
-    
-    stats_text = f'Mean difference: {mean_diff:.2e} {units}\n{interpretation}'
-    if service_name not in ['nitrate_cancer_cases', 'noxn_in_drinking_water']:
-        stats_text = f'Mean difference: {mean_diff:.2e} {units}\nTotal difference: {total_diff:.2e} {units}\n{interpretation}'
-    
-    ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, 
-           verticalalignment='top', fontsize=10,
-           bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    # Add summary statistics as text (optional)
+    if show_textbox:
+        mean_diff = np.nanmean(difference)
+        total_diff = np.nansum(difference) if service_name not in ['nitrate_cancer_cases', 'noxn_in_drinking_water'] else np.nanmean(difference)
+
+        # Create interpretation text based on service type
+        if service_info['positive_is_good'] is True:
+            interpretation = "Green = improvement, Red = degradation"
+        elif service_info['positive_is_good'] is False:
+            interpretation = "Green = reduction (good), Red = increase (bad)"
+        else:
+            interpretation = "Red = increase, Green = decrease"
+
+        stats_text = f'Mean difference: {mean_diff:.2e} {units}\n{interpretation}'
+        if service_name not in ['nitrate_cancer_cases', 'noxn_in_drinking_water']:
+            stats_text = f'Mean difference: {mean_diff:.2e} {units}\nTotal difference: {total_diff:.2e} {units}\n{interpretation}'
+
+        ax.text(0.02, 0.98, stats_text, transform=ax.transAxes,
+               verticalalignment='top', fontsize=10,
+               bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
     
     # Save the plot
     plt.tight_layout()
@@ -280,18 +285,23 @@ def create_ecosystem_service_difference_map(scenario_data, baseline_data, lons, 
                facecolor='white', edgecolor='none')
     plt.close()
     
+    # Calculate and print statistics regardless of textbox setting
+    mean_diff = np.nanmean(difference)
+    total_diff = np.nansum(difference) if service_name not in ['nitrate_cancer_cases', 'noxn_in_drinking_water'] else np.nanmean(difference)
+
     print(f"Saved plot: {output_path}")
     print(f"  Mean difference: {mean_diff:.2e} {units}")
     if service_name not in ['nitrate_cancer_cases', 'noxn_in_drinking_water']:
         print(f"  Total difference: {total_diff:.2e} {units}")
 
-def plot_ecosystem_service_comparison(scenario_name, service_name):
+def plot_ecosystem_service_comparison(scenario_name, service_name, show_textbox=False):
     """
     Main function to create ecosystem service comparison plot
-    
+
     Args:
         scenario_name: Name of scenario to compare
         service_name: Name of ecosystem service to plot
+        show_textbox: Whether to show statistics text box (default: False)
     """
     
     # Define paths
@@ -316,14 +326,15 @@ def plot_ecosystem_service_comparison(scenario_name, service_name):
     
     # Create the plot
     create_ecosystem_service_difference_map(scenario_data, baseline_data, lons, lats,
-                                          scenario_name, service_name, units, output_path)
+                                          scenario_name, service_name, units, output_path, show_textbox)
 
-def process_all_services(scenario_name):
+def process_all_services(scenario_name, show_textbox=False):
     """
     Process all ecosystem services for a given scenario
-    
+
     Args:
         scenario_name: Name of scenario to compare
+        show_textbox: Whether to show statistics text box (default: False)
     """
     
     # Define all available ecosystem services
@@ -353,7 +364,7 @@ def process_all_services(scenario_name):
         print(f"\n📊 Processing {i}/{len(services)}: {service}")
         
         try:
-            plot_ecosystem_service_comparison(scenario_name, service)
+            plot_ecosystem_service_comparison(scenario_name, service, show_textbox)
             successful += 1
             print(f"  ✅ Success")
         except Exception as e:
@@ -376,39 +387,26 @@ def process_all_services(scenario_name):
 
 def main():
     """Main function for command line usage"""
-    
-    if len(sys.argv) < 2:
-        print("Usage: python plot_ecosystem_services_comparison.py <scenario_name> [ecosystem_service]")
-        print("\nSupported ecosystem services:")
-        print("  - biodiversity")
-        print("  - carbon")
-        print("  - cropland_value")
-        print("  - forestry_value") 
-        print("  - grazing_methane")
-        print("  - grazing_value")
-        print("  - ground_noxn")
-        print("  - nitrate_cancer_cases")
-        print("  - noxn_in_drinking_water")
-        print("  - surface_noxn")
-        print("  - transition_cost")
-        print("  - all (process all services)")
-        print("\nExample:")
-        print("  python plot_ecosystem_services_comparison.py grazing_expansion")
-        print("  python plot_ecosystem_services_comparison.py forestry_expansion biodiversity")
-        print("  python plot_ecosystem_services_comparison.py grazing_expansion all")
-        sys.exit(1)
-    
-    scenario_name = sys.argv[1]
-    service_name = sys.argv[2] if len(sys.argv) > 2 else "all"
-    
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Plot ecosystem services comparison for UK scenarios')
+    parser.add_argument('scenario_name', help='Name of scenario to plot (e.g., grazing_expansion)')
+    parser.add_argument('service_name', nargs='?', default='all',
+                       help='Ecosystem service to plot (default: all)')
+    parser.add_argument('--show-textbox', action='store_true',
+                       help='Show statistics text box on plots (default: hidden)')
+
+    args = parser.parse_args()
+
     try:
-        if service_name == "all":
-            process_all_services(scenario_name)
+        if args.service_name == "all":
+            process_all_services(args.scenario_name, args.show_textbox)
         else:
-            plot_ecosystem_service_comparison(scenario_name, service_name)
-        
+            plot_ecosystem_service_comparison(args.scenario_name, args.service_name, args.show_textbox)
+
         print("✅ Ecosystem service plots created successfully!")
-        
+
     except Exception as e:
         print(f"❌ Error creating plots: {e}")
         import traceback

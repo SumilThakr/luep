@@ -69,11 +69,12 @@ def load_emission_data(scenario_path, emission_type):
         with rasterio.open(file_path) as src:
             data = src.read(1)
             
-            # Get coordinate arrays
+            # Get coordinate arrays efficiently
             height, width = data.shape
-            cols, rows = np.meshgrid(np.arange(width), np.arange(height))
-            lons, lats = rasterio.transform.xy(src.transform, rows, cols)
-            lons, lats = np.array(lons), np.array(lats)
+            transform = src.transform
+            x_coords = np.array([transform[2] + transform[0] * (j + 0.5) for j in range(width)])
+            y_coords = np.array([transform[5] + transform[4] * (i + 0.5) for i in range(height)])
+            lons, lats = np.meshgrid(x_coords, y_coords)
             
             # Get units from metadata or set defaults
             units = _get_units_for_emission_type(emission_type)
@@ -129,19 +130,20 @@ def _get_units_for_emission_type(emission_type):
     }
     return units_map.get(emission_type, 'units')
 
-def create_difference_map(scenario_data, baseline_data, lons, lats, 
-                         scenario_name, emission_type, units, output_path):
+def create_difference_map(scenario_data, baseline_data, lons, lats,
+                         scenario_name, emission_type, units, output_path, show_textbox=False):
     """
     Create a difference map comparing scenario to baseline
-    
+
     Args:
         scenario_data: Scenario emission data
-        baseline_data: Baseline emission data  
+        baseline_data: Baseline emission data
         lons, lats: Coordinate arrays
         scenario_name: Name of scenario
         emission_type: Type of emission
         units: Data units
         output_path: Output PNG path
+        show_textbox: Whether to show statistics text box (default: False)
     """
     
     # Calculate difference
@@ -182,9 +184,11 @@ def create_difference_map(scenario_data, baseline_data, lons, lats,
         vmax = 1.0
         vmin = -1.0
     
-    # Create diverging colormap (blue = negative, red = positive)
+    # Create diverging colormap (green = beneficial, red = detrimental)
+    # For dust emissions: negative difference (less dust) = good = green
+    # For dust emissions: positive difference (more dust) = bad = red
     norm = TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
-    cmap = plt.cm.RdBu_r  # Red-Blue reversed (red = positive, blue = negative)
+    cmap = plt.cm.RdYlGn_r  # Red-Yellow-Green reversed (green = negative/beneficial, red = positive/detrimental)
     
     # Plot the difference data
     im = ax.pcolormesh(lons, lats, difference, 
@@ -209,14 +213,15 @@ def create_difference_map(scenario_data, baseline_data, lons, lats,
     title = f'{scenario_name.replace("_", " ").title()} vs Sustainable Current\n{emission_type.replace("_", " ").title()}'
     plt.title(title, fontsize=14, fontweight='bold', pad=20)
     
-    # Add summary statistics as text
-    mean_diff = np.nanmean(difference)
-    total_diff = np.nansum(difference) 
-    
-    stats_text = f'Mean difference: {mean_diff:.2e} {units}\nTotal difference: {total_diff:.2e} {units}'
-    ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, 
-           verticalalignment='top', fontsize=10,
-           bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    # Add summary statistics as text (optional)
+    if show_textbox:
+        mean_diff = np.nanmean(difference)
+        total_diff = np.nansum(difference)
+
+        stats_text = f'Mean difference: {mean_diff:.2e} {units}\nTotal difference: {total_diff:.2e} {units}'
+        ax.text(0.02, 0.98, stats_text, transform=ax.transAxes,
+               verticalalignment='top', fontsize=10,
+               bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
     
     # Save the plot
     plt.tight_layout()
@@ -224,17 +229,22 @@ def create_difference_map(scenario_data, baseline_data, lons, lats,
                facecolor='white', edgecolor='none')
     plt.close()
     
+    # Calculate and print statistics regardless of textbox setting
+    mean_diff = np.nanmean(difference)
+    total_diff = np.nansum(difference)
+
     print(f"Saved plot: {output_path}")
     print(f"  Mean difference: {mean_diff:.2e} {units}")
     print(f"  Total difference: {total_diff:.2e} {units}")
 
-def plot_scenario_difference(scenario_name, emission_type):
+def plot_scenario_difference(scenario_name, emission_type, show_textbox=False):
     """
     Main function to create scenario difference plot
-    
+
     Args:
         scenario_name: Name of scenario to compare
         emission_type: Type of emission to plot
+        show_textbox: Whether to show statistics text box (default: False)
     """
     
     # Define paths
@@ -269,30 +279,25 @@ def plot_scenario_difference(scenario_name, emission_type):
     
     # Create the plot
     create_difference_map(scenario_data, baseline_data, lons, lats,
-                         scenario_name, emission_type, units, output_path)
+                         scenario_name, emission_type, units, output_path, show_textbox)
 
 def main():
     """Main function for command line usage"""
-    
-    if len(sys.argv) != 3:
-        print("Usage: python plot_scenario_difference.py <scenario_name> <emission_type>")
-        print("\nSupported emission types:")
-        print("  - dust_sum")
-        print("  - pm25_deposition") 
-        print("  - nox_emissions")
-        print("  - nh3_emissions")
-        print("  - bvoc_emissions")
-        print("\nExample:")
-        print("  python plot_scenario_difference.py grazing_expansion dust_sum")
-        sys.exit(1)
-    
-    scenario_name = sys.argv[1]
-    emission_type = sys.argv[2]
-    
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Plot scenario difference maps for UK scenarios')
+    parser.add_argument('scenario_name', help='Name of scenario to plot (e.g., grazing_expansion)')
+    parser.add_argument('emission_type', help='Type of emission to plot (e.g., dust_sum)')
+    parser.add_argument('--show-textbox', action='store_true',
+                       help='Show statistics text box on plots (default: hidden)')
+
+    args = parser.parse_args()
+
     try:
-        plot_scenario_difference(scenario_name, emission_type)
+        plot_scenario_difference(args.scenario_name, args.emission_type, args.show_textbox)
         print("✅ Plot created successfully!")
-        
+
     except Exception as e:
         print(f"❌ Error creating plot: {e}")
         import traceback
